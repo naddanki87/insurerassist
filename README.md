@@ -1,43 +1,42 @@
 # insurerassist Email Parser Component
 ```mermaid
-graph TD
-    A[Start] --> B[Initialize Gmail Service]
-    B --> C[Get Latest Unread Email]
-    C -->|Email Found| D[Check if Email is Spam]
-    C -->|No Email Found| E[Print No unread emails found]
+flowchart TD
+    %% Legend for better understanding
+    subgraph Legend [Legend]
+    direction LR
+    A1[Action Node]:::action --> S1[Stop Node]:::stop --> D1[Decision Node]:::decision
+    end
 
-    D -->|Is Spam| F[Send Request Action i.e email to mark as not spam]
-    D -->|Not Spam| G[Capture Email Body Details]
-    
-    G --> H[Check for Attachments]
-    H -->|Attachments Found| I[Download Attachments]
-    I --> J[Read All Files in Directory]
-    H -->|No Attachments| K[Print No attachments found]
-    
-    J --> L[Capture Each File Content]
-    G --> M[Mark Email as Read]
-    M -->|Success| N[Print Email marked as read successfully]
-    M -->|Failure| O[Print Failed to mark the email as read]
+    classDef action fill:#ADD8E6,stroke:#000,stroke-width:1px,color:#000;
+    classDef stop fill:#F08080,stroke:#000,stroke-width:2px,color:#000;
+    classDef decision fill:#FFD700,stroke:#000,stroke-width:1px,color:#000,font-weight:bold;
 
-    N --> P[Delete All Files in Download Directory]
-    L --> P
-    P --> Q[End]
+    %% Actual process flow
+    Start["Start Script"]:::action --> B[Initialize Gmail Service]:::action
+    B --> C{Fetch Latest Unread Email}:::decision
 
-  style A stroke:#000000,fill:#E1F0D4 
-  style B stroke:#000000,fill:#C3EFE0 
-  style C stroke:#000000,fill:#F6ACD8
-  style D stroke:#000000,fill:#C2C4B3 
-  style E stroke:#000000,fill:#D4EFF0
-  style F stroke:#000000,fill:#F2F7D2 
-  style G stroke:#000000,fill:#E9A3B2 
-  style H stroke:#000000,fill:#DBCDF8 
-  style I stroke:#000000,fill:#BEF6AC 
-  style J stroke:#000000,fill:#A3E9CC 
-  style K stroke:#000000,fill:#D4EFF0
-  style L stroke:#000000,fill:#D4EFF0
-  style M stroke:#000000,fill:#D4EFF0
-  style N stroke:#000000,fill:#D4EFF0
-  style O stroke:#000000,fill:#D4EFF0
-  style P stroke:#000000,fill:#D4EFF0
+    C -->|No Unread Emails| D[Stop: No unread emails found]:::stop
+    C -->|Unread Email Found| E{Check if Email is Spam}:::decision
+
+    E -->|Spam| F[Stop: Email is marked as spam]:::stop
+    E -->|Not Spam| G[Process Email Details]:::action
+
+    G --> H[Print Email Metadata]:::action
+    H --> I[Convert Email Body to Base64]:::action
+    I --> J{Fetch Attachments as Base64}:::decision
+
+    J -->|Attachments Found| K[Prepare JSON with Email Body and Attachments]:::action
+    J -->|No Attachments| L[Prepare JSON with Email Body Only]:::action
+
+    K --> M[Print JSON Preview]:::action
+    L --> M
+
+    M --> N{Mark Email as Read}:::decision
+    N -->|Success| O[Email marked as read successfully]:::action
+    N -->|Failure| P[Stop: Failed to mark email as read]:::stop
+
+    O --> Q[Clean Up Downloaded Files]:::action
+    P --> Q
+    Q --> R["End Script"]:::stop
 
 ```
