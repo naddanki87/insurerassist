@@ -1,4 +1,4 @@
-# zUser Journey Email Parser Component
+# User Journey Email Parser Component
 ```mermaid
 journey
     title Email Processing Workflow Journey
