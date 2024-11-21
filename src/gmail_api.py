@@ -192,7 +192,6 @@ def download_attachments_message(service, msg_id, target_dir):
             with open(file_path, 'wb') as f:
                 f.write(file_data)
 
-
 def download_attachments_thread(service, msg_id, target_dir):
     thread = service.users().threads().get(userId='me', id=msg_id).execute()
     for message in thread['messages']:
@@ -547,3 +546,73 @@ def get_email_attachments_info(service, msg_id, user_id='me'):
     except Exception as e:
         print(f"An error occurred while fetching attachments: {e}")
         return []
+
+
+def download_attachments_message_base64(service, msg_id, target_dir):
+
+    try:
+        # Fetch the message details
+        message = service.users().messages().get(userId='me', id=msg_id).execute()
+        attachments_base64 = {}
+
+        for part in message.get('payload', {}).get('parts', []):
+            if part.get('filename'):  # Check if there is a filename
+                att_id = part['body'].get('attachmentId')
+                if not att_id:
+                    continue
+
+                # Fetch the attachment
+                att = service.users().messages().attachments().get(userId='me', messageId=msg_id, id=att_id).execute()
+                data = att['data']
+                file_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
+
+                # Save the file to the target directory
+                file_path = os.path.join(target_dir, part['filename'])
+                print('Saving attachment to:', file_path)
+                with open(file_path, 'wb') as f:
+                    f.write(file_data)
+
+                # Add base64-encoded data to the dictionary
+                attachments_base64[part['filename']] = data
+
+        return attachments_base64
+
+    except Exception as e:
+        print(f"An error occurred while downloading attachments: {e}")
+        return {}
+
+
+import os
+import base64
+
+
+def get_attachments_as_dict(service, msg_id):
+
+    try:
+        # Fetch the email message
+        message = service.users().messages().get(userId='me', id=msg_id).execute()
+        attachments_dict = {}
+
+        # Loop through message parts
+        for part in message.get('payload', {}).get('parts', []):
+            if part.get('filename'):  # If the part is an attachment
+                att_id = part['body'].get('attachmentId')
+                if not att_id:
+                    continue
+
+                # Fetch the attachment data
+                att = service.users().messages().attachments().get(userId='me', messageId=msg_id, id=att_id).execute()
+                data = att.get('data')
+
+                # Add to the dictionary (filename as key, base64 content as value)
+                attachments_dict[part['filename']] = data
+
+        return attachments_dict
+
+    except Exception as e:
+        print(f"An error occurred while retrieving attachments: {e}")
+        return {}
+
+
+def encode_to_base64(data):
+    return base64.b64encode(data.encode('utf-8')).decode('utf-8')

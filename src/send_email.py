@@ -6,7 +6,7 @@ client_file = 'token.json'
 service = init_gmail_service(client_file)
 
 to_address = 'insurancepolicyproj@gmail.com'
-email_subject = 'New Email 4'
+email_subject = 'New Email Sow'
 email_body = 'This is a test email sent using the Gmail API.'
 
 attachment_dir = Path('./attachments')

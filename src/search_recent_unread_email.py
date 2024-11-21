@@ -1,50 +1,59 @@
 from pathlib import Path
-from gmail_api import init_gmail_service, get_latest_unread_email_inbox, download_attachments_message, mark_email_as_read, is_email_spam, get_email_attachments_info
-from file_operation import  read_all_files_in_directory, delete_all_files_in_folder
+from gmail_api import init_gmail_service, get_latest_unread_email_inbox,mark_email_as_read, is_email_spam,get_attachments_as_dict,encode_to_base64
+from file_operation import delete_all_files_in_folder
+
+import json
 # Create the Gmail API service
 client_file = 'token.json'
 service = init_gmail_service(client_file)
 
 
 latest_email = get_latest_unread_email_inbox(service)
-msg_id = latest_email['msg_id']
+
 user_id = 'me'
 download_dir = Path('./downloads')
 
-# Display email details
 if latest_email:
+    msg_id = latest_email['msg_id']
     print(f"Checking if email with subject '{latest_email['subject']}' is spam...")
     is_spam = is_email_spam(service, msg_id)
 
     if is_spam:
-        print("This email is marked as spam no further actions. Need to request or send email saying please mark as NOT A SPAM")
+        print("This email is marked as spam. No further actions. Request the sender to mark as NOT SPAM.")
     else:
-         print("Latest Unread Email in INBOX:")
-         print(f"Subject: {latest_email['subject']}")
-         print(f"From: {latest_email['sender']}")
-         print(f"Date: {latest_email['date']}")
-         print(f"Snippet: {latest_email['snippet']}")
-         print(f"Body: {latest_email['body']}")
-         attachments = get_email_attachments_info(service, msg_id)
+        print("Processing latest unread email in INBOX:")
+        print(f"Subject: {latest_email['subject']}")
+        print(f"From: {latest_email['sender']}")
+        print(f"Date: {latest_email['date']}")
+        print(f"Snippet: {latest_email['snippet']}")
+        print(f"Email Body: {latest_email['body']}")
 
-         if attachments:
-             print("Attachments found:")
-             download_attachments_message(service, msg_id, download_dir)
-             for attachment in attachments:
-                 print(f"Filename: {attachment['filename']}, Attachment ID: {attachment['attachmentId']}")
-         else:
-             print("No attachments found.")
+        email_body_base64 = encode_to_base64(latest_email['body'])
+        attachments_base64 = get_attachments_as_dict(service, msg_id)
 
-         result = mark_email_as_read(service, msg_id)
-         content = read_all_files_in_directory(download_dir)
+        # Prepare the final JSON structure
+        final_json = {
+            "email_body": email_body_base64,
+            "attachments": attachments_base64 if attachments_base64 else {}
+        }
 
-         if content:
-                print(content)
-         if result:
-                print("Email marked as read successfully.")
-         else:
-                print("Failed to mark the email as read.")
+        truncated_attachments = {key: value[:100] for key, value in final_json["attachments"].items()}
+        final_json_preview = {
+            "email_body": email_body_base64[:100],  # Truncate the email body for preview
+            "attachments": truncated_attachments
+        }
 
+        print("Final JSON Preview:")
+        print(json.dumps(final_json_preview, indent=4))
+
+        # Mark email as read
+        result = mark_email_as_read(service, msg_id)
+        if result:
+            print("Email marked as read successfully.")
+        else:
+            print("Failed to mark the email as read.")
+
+    # Clean up downloaded files
     delete_all_files_in_folder(download_dir)
 else:
     print("No unread emails found in INBOX.")
